@@ -107,7 +107,9 @@ class ServerSentEventsBlueprint(Blueprint):
             redis_url = current_app.config.get("REDIS_URL")
         if not redis_url:
             raise KeyError("Must set a redis connection URL in app config.")
-        return StrictRedis.from_url(redis_url)
+
+        redis_time_out = current_app.config.get("SSE_REDIS_TIMEOUT")
+        return StrictRedis.from_url(redis_url, socket_timeout=redis_time_out)
 
     def publish(self, data, type=None, id=None, retry=None, channel='sse'):
         """
@@ -133,12 +135,15 @@ class ServerSentEventsBlueprint(Blueprint):
         """
         A generator of :class:`~flask_sse.Message` objects from the given channel.
         """
-        pubsub = self.redis.pubsub()
-        pubsub.subscribe(channel)
-        for pubsub_message in pubsub.listen():
-            if pubsub_message['type'] == 'message':
-                msg_dict = json.loads(pubsub_message['data'])
-                yield Message(**msg_dict)
+        try:
+            pubsub = self.redis.pubsub()
+            pubsub.subscribe(channel)
+            for pubsub_message in pubsub.listen():
+                if pubsub_message['type'] == 'message':
+                    msg_dict = json.loads(pubsub_message['data'])
+                    yield Message(**msg_dict)
+        except:
+            yield Message({}, type='timeout')
 
     def stream(self):
         """
