@@ -90,7 +90,6 @@ class Message(object):
             self.retry == other.retry
         )
 
-
 class ServerSentEventsBlueprint(Blueprint):
     """
     A :class:`flask.Blueprint` subclass that knows how to publish, subscribe to,
@@ -108,8 +107,7 @@ class ServerSentEventsBlueprint(Blueprint):
         if not redis_url:
             raise KeyError("Must set a redis connection URL in app config.")
 
-        redis_time_out = current_app.config.get("SSE_REDIS_TIMEOUT")
-        return StrictRedis.from_url(redis_url, socket_timeout=redis_time_out)
+        return StrictRedis.from_url(redis_url)
 
     def publish(self, data, type=None, id=None, retry=None, channel='sse'):
         """
@@ -142,8 +140,9 @@ class ServerSentEventsBlueprint(Blueprint):
                 if pubsub_message['type'] == 'message':
                     msg_dict = json.loads(pubsub_message['data'])
                     yield Message(**msg_dict)
-        except:
-            yield Message({}, type='timeout')
+        finally:
+            pubsub.unsubscribe(channel)
+            pubsub.close()
 
     def stream(self):
         """

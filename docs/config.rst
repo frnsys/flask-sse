@@ -32,21 +32,6 @@ If you are using a Redis server that has a password use::
 
     app.config["REDIS_URL"] = "redis://:password@localhost"
 
-To disconnect stale Redis connections, you can also specify a timeout (in seconds):
-
-.. code-block:: python
-
-    app.config["SSE_REDIS_TIMEOUT"] = 10
-
-On timeout, clients will receive a message with ``type=timeout``. You can listen to it like so:
-
-.. code-block:: javascript
-
-    var source = new EventSource("{{ url_for('sse.stream') }}");
-    source.addEventListener('timeout', function(event) {
-        // do what you want with this data
-    }, false);
-
 Application Server
 ------------------
 
